@@ -1,0 +1,211 @@
+{
+  "name": "Gatekeeper Verifier Pro - Diagrama Visual",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gatekeeper-webhook",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 100, 300 ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT folio FROM pagos_referencia WHERE folio = '{{ $('Webhook').item.json.body.folio }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [ 320, 300 ],
+      "id": "postgres-1",
+      "name": "Postgres: Validar Folio",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "9Ao7lvBZvRvPJ17V",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Webhook').item.json.body.email }}",
+              "operation": "endsWith",
+              "value2": "@itses.edu.mx"
+            },
+            {
+              "value1": "={{ $json.folio }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "if-1",
+      "name": "IF: Validar Folio e ITSES",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 540, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "http://localhost:3000/api/callback",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "solicitud_id",
+              "value": "={{ $('Webhook').item.json.body.solicitud_id }}"
+            },
+            {
+              "name": "estatus",
+              "value": "Aceptado"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 780, 150 ],
+      "id": "http-aceptado",
+      "name": "API: Estatus Aceptado"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "http://localhost:3000/api/callback",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "solicitud_id",
+              "value": "={{ $('Webhook').item.json.body.solicitud_id }}"
+            },
+            {
+              "name": "estatus",
+              "value": "Rechazado"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 780, 450 ],
+      "id": "http-rechazado",
+      "name": "API: Estatus Rechazado"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "=ITSES Gatekeeper | Solicitud Aceptada",
+        "message": "=<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f6F9; margin: 0; padding: 20px; } .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); } .header { background-color: #0c1e33; padding: 40px 20px; text-align: center; border-bottom: 4px solid #b8914c; } .header h1 { color: #ffffff; margin: 0; font-size: 26px; letter-spacing: 1px; } .header p { color: #b8914c; margin: 5px 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; } .body { padding: 40px 30px; } .body p { color: #4a5568; font-size: 16px; line-height: 1.6; } .status-card { margin: 30px 0; padding: 24px; border-radius: 8px; text-align: center; background: #f8fafc; border: 1px solid #e2e8f0; } .status-title { font-size: 12px; text-transform: uppercase; color: #718096; letter-spacing: 1px; margin-bottom: 10px; } .status-value-Aceptado { color: #059669; font-size: 24px; font-weight: bold; margin: 0; } .icon { font-size: 40px; margin-bottom: 10px; } .footer { background-color: #f1f5f9; text-align: center; padding: 24px; font-size: 12px; color: #94a3b8; }</style></head><body><div class=\"container\"><div class=\"header\"><h1>Gatekeeper ITSES</h1><p>Sistema Central de Accesos</p></div><div class=\"body\"><p>Hola,</p><p>Tu solicitud de validación para la referencia <strong>{{ $('Webhook').item.json.body.folio }}</strong> ha sido procesada.</p><div class=\"status-card\"><div class=\"icon\">✅</div><h2 class=\"status-value-Aceptado\">ESTUDIANTE VALIDADO</h2></div><p>Hemos cruzado tu información exitosamente con la Base de Datos del ITSES. Tu correo y folio son correctos, por lo que el pase digital ha sido generado en tu navegador.</p></div><div class=\"footer\"><p>© Instituto Tecnológico Sanmiguelense de Estudios Superiores<br>Mensaje automático del servidor Gatekeeper de ITSES.</p></div></div></body></html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [ 1020, 150 ],
+      "id": "gmail-aceptado",
+      "name": "Gmail: Confirmación Aceptada",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "RcRVsqpcF7dkghJB",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "=ITSES Gatekeeper | Solicitud Rechazada",
+        "message": "=<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f6F9; margin: 0; padding: 20px; } .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); } .header { background-color: #0c1e33; padding: 40px 20px; text-align: center; border-bottom: 4px solid #b8914c; } .header h1 { color: #ffffff; margin: 0; font-size: 26px; letter-spacing: 1px; } .header p { color: #b8914c; margin: 5px 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; } .body { padding: 40px 30px; } .body p { color: #4a5568; font-size: 16px; line-height: 1.6; } .status-card { margin: 30px 0; padding: 24px; border-radius: 8px; text-align: center; background: #f8fafc; border: 1px solid #e2e8f0; } .status-title { font-size: 12px; text-transform: uppercase; color: #718096; letter-spacing: 1px; margin-bottom: 10px; } .status-value-Rechazado { color: #dc2626; font-size: 24px; font-weight: bold; margin: 0; } .icon { font-size: 40px; margin-bottom: 10px; } .footer { background-color: #f1f5f9; text-align: center; padding: 24px; font-size: 12px; color: #94a3b8; }</style></head><body><div class=\"container\"><div class=\"header\"><h1>Gatekeeper ITSES</h1><p>Sistema Central de Accesos</p></div><div class=\"body\"><p>Hola,</p><p>Tu solicitud de validación para la referencia <strong>{{ $('Webhook').item.json.body.folio }}</strong> ha sido procesada.</p><div class=\"status-card\"><div class=\"icon\">❌</div><h2 class=\"status-value-Rechazado\">ACCESO DENEGADO</h2></div><p>No encontramos registros que coincidan con tu folio o tu correo electrónico no cumplió con las políticas. Asegúrate de ingresarlo exactamente como aparece en tu comprobante.</p></div><div class=\"footer\"><p>© Instituto Tecnológico Sanmiguelense de Estudios Superiores<br>Mensaje automático del servidor Gatekeeper de ITSES.</p></div></div></body></html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [ 1020, 450 ],
+      "id": "gmail-rechazado",
+      "name": "Gmail: Confirmación Rechazada",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "RcRVsqpcF7dkghJB",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Validar Folio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Validar Folio": {
+      "main": [
+        [
+          {
+            "node": "IF: Validar Folio e ITSES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Validar Folio e ITSES": {
+      "main": [
+        [
+          {
+            "node": "API: Estatus Aceptado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "API: Estatus Rechazado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API: Estatus Aceptado": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Confirmación Aceptada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API: Estatus Rechazado": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Confirmación Rechazada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}

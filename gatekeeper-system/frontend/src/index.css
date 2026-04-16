@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-itses-navy: #0c1e33;
+  --color-itses-dark: #07101c;
+  --color-itses-gold: #b8914c;
+}
+
+@layer utilities {
+  .animate-in {
+    animation-duration: 0.5s;
+    animation-fill-mode: forwards;
+  }
+}

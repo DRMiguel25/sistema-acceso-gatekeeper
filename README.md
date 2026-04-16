@@ -94,4 +94,8 @@ Antes de inicializar el sistema, asegúrate de contar con:
 * `/frontend` - Aplicación React 19, Vite y estilos con Tailwind CSS.
 * `/n8n` - Flujos pre-configurados (.json) para importación de herramientas automatizadas.
 * `/db` - Scripts y migraciones para levantar PostgreSQL.
+
+## Licencia
+
+Este proyecto está bajo la Licencia **MIT**. Eres libre de utilizarlo, modificarlo y distribuirlo para fines académicos, educativos o personales.
 # sistema-acceso-gatekeeper
